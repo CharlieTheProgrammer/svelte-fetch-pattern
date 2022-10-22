@@ -1,4 +1,4 @@
-{#if user}
+{#if $selectedUser}
 	<form class="space-y-8 divide-y divide-gray-200 text-left">
 		<div class="space-y-8 divide-y divide-gray-200">
 			<div>
@@ -17,7 +17,7 @@
 								name="username"
 								id="username"
 								autocomplete="username"
-								bind:value={user.username}
+								bind:value={$selectedUser.username}
 								class="block w-full min-w-0 flex-1 rounded-none rounded-r-md border-gray-300 focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm"
 							/>
 						</div>
@@ -31,7 +31,7 @@
 						<div class="mt-1">
 							<textarea
 								id="about"
-								bind:value={user.company.catchPhrase}
+								bind:value={$selectedUser.company.catchPhrase}
 								name="about"
 								rows="3"
 								class="block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm"
@@ -57,7 +57,7 @@
 								name="name"
 								id="name"
 								autocomplete="given-name"
-								bind:value={user.name}
+								bind:value={$selectedUser.name}
 								class="block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm"
 							/>
 						</div>
@@ -74,7 +74,7 @@
 								name="email"
 								type="email"
 								autocomplete="email"
-								bind:value={user.email}
+								bind:value={$selectedUser.email}
 								class="block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm"
 							/>
 						</div>
@@ -107,7 +107,7 @@
 								name="street-address"
 								id="street-address"
 								autocomplete="street-address"
-								bind:value={user.address.street}
+								bind:value={$selectedUser.address.street}
 								class="block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm"
 							/>
 						</div>
@@ -121,7 +121,7 @@
 								name="city"
 								id="city"
 								autocomplete="address-level2"
-								bind:value={user.address.city}
+								bind:value={$selectedUser.address.city}
 								class="block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm"
 							/>
 						</div>
@@ -148,7 +148,7 @@
 								name="postal-code"
 								id="postal-code"
 								autocomplete="postal-code"
-								bind:value={user.address.zipcode}
+								bind:value={$selectedUser.address.zipcode}
 								class="block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm"
 							/>
 						</div>
@@ -174,36 +174,47 @@
 	</form>
 {:else}
 	<div class="bg-gray-50 w-100 p-10 rounded-lg my-20">
-		<p class="my-5">No User Selected</p>
+		<p class="my-5">Loading user....</p>
 	</div>
 {/if}
 
 
 <script lang="ts">
-	import { createEventDispatcher } from 'svelte';
-	import { Users, UserValidationSchema, type User } from './lib/Users.service';
-	import { Utils } from './utils';
-
-	export let user: User;
-
-	const dispatch = createEventDispatcher();
+	import { UsersService, UserValidationSchema, type User } from '../Users.service';
+	import { Utils } from '../../utils';
+  import { selectedUser } from './Users.store';
+  import { params, pop, push } from 'svelte-spa-router';
+  import { Routes } from '../routes';
+  import { onMount } from 'svelte';
 
 	let errors: any = null;
 
 	function unselectUser() {
-		dispatch('unselectUser');
+		selectedUser.set(null);
+		push(Routes.UsersList());
 	}
 
+	onMount(async () => {
+		// If selectedUser is null, we have to fetch the user using the route params
+		if (!$selectedUser) {
+			// Note: This seems to fire multiple times and will lead to errors unless data is checked.
+			params.subscribe(async (data) => {
+				if (data && data.userId)
+					selectedUser.set(await UsersService.getUser(Number.parseInt(data.userId)))
+			})
+		}
+	});
+
 	async function updateUser() {
-		// Here is where form validation would also go.
 		errors = await validateForm();
 		if (errors) return;
-		await Users.editUser(user);
+		await UsersService.editUser($selectedUser);
+		push(Routes.UsersList());
 		// Here is where a success snackbar could go.
 	}
 
 	async function validateForm() {
-		return Utils.getErrors(UserValidationSchema, user);
+		return Utils.getErrors(UserValidationSchema, $selectedUser);
 	}
 </script>
 
