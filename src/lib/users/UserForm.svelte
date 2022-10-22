@@ -180,10 +180,10 @@
 
 
 <script lang="ts">
-	import { UsersService, UserValidationSchema, type User } from '../Users.service';
+	import { UsersService, UserValidationSchema } from '../Users.service';
 	import { Utils } from '../../utils';
   import { selectedUser } from './Users.store';
-  import { params, pop, push } from 'svelte-spa-router';
+  import { params, push } from 'svelte-spa-router';
   import { Routes } from '../routes';
   import { onMount } from 'svelte';
 
