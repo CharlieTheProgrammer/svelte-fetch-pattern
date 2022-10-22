@@ -1,4 +1,5 @@
 {#if $selectedUser}
+<div class="p-8 bg-gray-50 rounded-lg shadow-sm">
 	<form class="space-y-8 divide-y divide-gray-200 text-left">
 		<div class="space-y-8 divide-y divide-gray-200">
 			<div>
@@ -157,7 +158,14 @@
 			</div>
 		</div>
 
-		<div class="pt-5">
+		<div class="pt-5 flex items-center justify-between">
+			{#if formError}
+			<p class="form-error-wrapper">
+					<span class="form-error" >{formError}</span>
+			</p>
+			{:else}
+				<p></p>
+			{/if}
 			<div class="flex justify-end">
 				<button
 					type="button"
@@ -172,6 +180,7 @@
 			</div>
 		</div>
 	</form>
+</div>
 {:else}
 	<div class="bg-gray-50 w-100 p-10 rounded-lg my-20">
 		<p class="my-5">Loading user....</p>
@@ -188,6 +197,7 @@
   import { onMount } from 'svelte';
 
 	let errors: any = null;
+	let formError: string = null;
 
 	function unselectUser() {
 		selectedUser.set(null);
@@ -208,12 +218,18 @@
 	async function updateUser() {
 		errors = await validateForm();
 		if (errors) return;
-		await UsersService.editUser($selectedUser);
-		push(Routes.UsersList());
-		// Here is where a success snackbar could go.
+		try {
+			await UsersService.editUser($selectedUser);
+			push(Routes.UsersList());
+			// Here is where a success snackbar could go.
+		} catch (error) {
+			formError = error.message;
+		}
 	}
 
 	async function validateForm() {
+		formError = null;
+		errors = null;
 		return Utils.getErrors(UserValidationSchema, $selectedUser);
 	}
 </script>
@@ -223,5 +239,13 @@
 	/* This doesn't belong here but it works! */
 	p:global(.form-field-error) {
 		@apply text-red-500 text-sm py-2;
+	}
+
+	:global(.form-error-wrapper) {
+		@apply px-4 py-2 rounded-lg bg-red-100;
+	}
+
+	:global(.form-error) {
+		@apply text-red-600 font-semibold text-sm;
 	}
 </style>
